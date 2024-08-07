@@ -165,25 +165,23 @@
      
 ``` 
 task_manager/
-├── main.── Delivery/
-│   ├── main.go
-│   ├── controllers/
-│   │   └── controller.go
-│   └── routers/
-│       └── router.go
-├── Domain/
-│   └── domain.go
-├── Infrastructure/
-│   ├── auth_middleWare.go
-│   ├── jwt_service.go
-│   └── password_service.go
-├── Repository/
-│   ├── task_repository.go
-│   └── user_repository.go
-└── Usecase/
-    ├── task_usecases.go
-    └── user_usecases.go
-
+├── main.go 
+├── middleware/
+│   └── auth_middleware.go
+├── controllers/
+│   └── task_controller.go
+├── models/
+│   └── task.go
+│   └── user.go
+├── data/
+│   └── task_service.go
+│   └── user_service.go
+├── router/
+│   └── router.go
+├── docs/
+│   └── api_documentation.md
+└── .env
+└── go.mod
 ```
 
   - **main.go:** Entry point of the application.
