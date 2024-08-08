@@ -24,6 +24,19 @@ func (u *UserUsecase) Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// Check if the username already exists
+	existingUser, _ := u.userRepo.FindByUsername(user.Username)
+	// If a user with the same username exists, return an error
+	if len(existingUser.Username) > 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
+		return
+	}
+	// Check password hardness
+	if err := infrastructure.CheckPasswordHardness(user.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Check if there are existing users
 	userCount, err := u.userRepo.CountUsers()
 	if err != nil {
