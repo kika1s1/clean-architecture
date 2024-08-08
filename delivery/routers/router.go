@@ -5,7 +5,7 @@ import (
 	"github.com/kika1s1/task_manager/delivery/controllers"
 	"github.com/kika1s1/task_manager/infrastructure"
 	"github.com/kika1s1/task_manager/repositories"
-	"github.com/kika1s1/task_manager/usecases"
+	"github.com/kika1s1/task_manager/Usecases" // Update the import statement to match the correct case
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -18,7 +18,7 @@ func SetupRouter(client *mongo.Client) *gin.Engine {
 
 	// Initialize use cases
 	userUsecase := usecases.NewUserUsecase(*userRepo)
-	taskUsecase := usecases.NewTaskUsecase(*taskRepo)
+	taskUsecase := usecases.NewTaskUsecase(taskRepo)
 
 	// Initialize controller
 	ctrl := controllers.NewController(userUsecase, taskUsecase)
