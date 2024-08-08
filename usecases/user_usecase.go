@@ -1,11 +1,13 @@
 package usecases
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/kika1s1/task_manager/domain"
 	"github.com/kika1s1/task_manager/infrastructure"
 	"github.com/kika1s1/task_manager/repositories"
-	"net/http"
 )
 
 type UserUsecase struct {
@@ -21,6 +23,19 @@ func (u *UserUsecase) Register(c *gin.Context) {
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	// Check if there are existing users
+	userCount, err := u.userRepo.CountUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking user count"})
+		return
+	}
+
+	// Set the first user as admin
+	if userCount == 0 {
+		user.IsAdmin = true
+	} else {
+		user.IsAdmin = false
 	}
 
 	hashedPassword, err := infrastructure.HashPassword(user.Password)
@@ -51,8 +66,9 @@ func (u *UserUsecase) Login(c *gin.Context) {
 		return
 	}
 
-	if infrastructure.ComparePassword(storedUser.Password, user.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	if !infrastructure.ComparePassword(storedUser.Password, user.Password) {
+		fmt.Println("Password is correct")
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials!!"})
 		return
 	}
 
