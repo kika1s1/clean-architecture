@@ -14,9 +14,9 @@ import (
 
 func main() {
 	// Load environment variables
-	err := godotenv.Load("../.env")
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file +: %s", err)
+		log.Fatalf("Error loading .env file ++: %s", err)
 	}
 
 	// Connect to MongoDB

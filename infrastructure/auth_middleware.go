@@ -13,7 +13,7 @@ import (
 )
 
 func AuthMiddleware() gin.HandlerFunc {
-	err := godotenv.Load("../.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file: %s", err)
 	}
