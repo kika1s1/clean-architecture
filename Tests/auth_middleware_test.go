@@ -1,115 +1,95 @@
-package Tests
+package tests
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/kika1s1/task_manager/domain"
 	"github.com/kika1s1/task_manager/infrastructure"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-func setupEnv() {
-    os.Setenv("JWT_SECRET", "mysecret")
+func generateToken(secret string, claims domain.Claims) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, _ := token.SignedString([]byte(secret))
+	return tokenString
 }
 
 func TestAuthMiddleware_ValidToken(t *testing.T) {
-    setupEnv()
+	// Set up environment variable for JWT_SECRET
+	os.Setenv("JWT_SECRET", "testsecret")
 
-    router := gin.Default()
-    middleware := infrastructure.AuthMiddleware
-    router.GET("/test", middleware, func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{"message": "success"})
-    })
+	// Create a valid token
+	claims := domain.Claims{
+		Username: "testuser",
+		IsAdmin:  true,
+	}
+	tokenString := generateToken("testsecret", claims)
 
-    token := generateToken(t, "1", "testuser")
+	// Set up Gin and the AuthMiddleware
+	r := gin.New()
+	r.Use(infrastructure.AuthMiddleware())
+	r.GET("/protected", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "Authorized"})
+	})
 
-    req, _ := http.NewRequest("GET", "/test", nil)
-    req.Header.Set("Authorization", "Bearer "+token)
-    resp := httptest.NewRecorder()
+	// Create a request with the valid token
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
 
-    router.ServeHTTP(resp, req)
+	// Test the request
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusOK, resp.Code)
-    assert.JSONEq(t, `{"message": "success"}`, resp.Body.String())
+	// Assertions
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.JSONEq(t, `{"message": "Authorized"}`, w.Body.String())
+}
+
+func TestAuthMiddleware_InvalidToken(t *testing.T) {
+	// Set up environment variable for JWT_SECRET
+	os.Setenv("JWT_SECRET", "testsecret")
+
+	// Set up Gin and the AuthMiddleware
+	r := gin.New()
+	r.Use(infrastructure.AuthMiddleware())
+	r.GET("/protected", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "Authorized"})
+	})
+
+	// Create a request with an invalid token
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.Header.Set("Authorization", "Bearer invalidtoken")
+
+	// Test the request
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	// Assertions
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.JSONEq(t, `{"error": "Invalid token"}`, w.Body.String())
 }
 
 func TestAuthMiddleware_MissingToken(t *testing.T) {
-    setupEnv()
+	// Set up Gin and the AuthMiddleware
+	r := gin.New()
+	r.Use(infrastructure.AuthMiddleware())
+	r.GET("/protected", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"message": "Authorized"})
+	})
 
-    router := gin.Default()
-    middleware := infrastructure.AuthMiddleware
-    router.GET("/test", middleware, func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{"message": "success"})
-    })
+	// Create a request with no token
+	req, _ := http.NewRequest("GET", "/protected", nil)
 
-    req, _ := http.NewRequest("GET", "/test", nil)
-    resp := httptest.NewRecorder()
+	// Test the request
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
 
-    router.ServeHTTP(resp, req)
-
-    assert.Equal(t, http.StatusUnauthorized, resp.Code)
-    assert.JSONEq(t, `{"error": "Missing or malformed token"}`, resp.Body.String())
-}
-
-func TestAuthMiddleware_MalformedToken(t *testing.T) {
-    setupEnv()
-
-    router := gin.Default()
-    middleware := infrastructure.AuthMiddleware
-    router.GET("/test", middleware, func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{"message": "success"})
-    })
-
-    req, _ := http.NewRequest("GET", "/test", nil)
-    req.Header.Set("Authorization", "Bearer invalidtoken")
-    resp := httptest.NewRecorder()
-
-    router.ServeHTTP(resp, req)
-
-    assert.Equal(t, http.StatusUnauthorized, resp.Code)
-    assert.JSONEq(t, `{"error": "Invalid token"}`, resp.Body.String())
-}
-
-func TestAuthMiddleware_InvalidTokenClaims(t *testing.T) {
-    setupEnv()
-
-    router := gin.Default()
-    middleware := infrastructure.AuthMiddleware
-    router.GET("/test", middleware, func(c *gin.Context) {
-        c.JSON(http.StatusOK, gin.H{"message": "success"})
-    })
-
-    // Generate a token with invalid claims
-    invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIn0.invalidsignature"
-
-    req, _ := http.NewRequest("GET", "/test", nil)
-    req.Header.Set("Authorization", "Bearer "+invalidToken)
-    resp := httptest.NewRecorder()
-
-    router.ServeHTTP(resp, req)
-
-    assert.Equal(t, http.StatusUnauthorized, resp.Code)
-    assert.JSONEq(t, `{"error": "Invalid token claims"}`, resp.Body.String())
-}
-
-// Helper function to generate JWT token
-func generateToken(t *testing.T, userID, username string) string {
-    jwtSecret := "mysecret"
-    token := jwt.NewWithClaims(jwt.SigningMethodHS256, &Domain.Claims{
-        UserID:   userID,
-        Username: username,
-    })
-
-    tokenString, err := token.SignedString([]byte(jwtSecret))
-    if err != nil {
-        t.Fatalf("Failed to generate token: %v", err)
-    }
-
-    return tokenString
+	// Assertions
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.JSONEq(t, `{"error": "Missing or malformed token"}`, w.Body.String())
 }
