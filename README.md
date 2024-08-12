@@ -162,8 +162,7 @@
           JWT_SECRET = "YOUR_JWT_SECRET"
 
 3. **Folder Structure**:
-     
-`
+```     
     task-manager/
     ├── Delivery/
     │   ├── main.go
@@ -184,6 +183,8 @@
         ├── task_usecases.go
         └── user_usecases.go 
         ```
+
+```
 
 
   - **main.go:** Entry point of the application.
