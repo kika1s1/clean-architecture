@@ -5,7 +5,7 @@ import (
 	"github.com/kika1s1/task_manager/delivery/controllers"
 	"github.com/kika1s1/task_manager/infrastructure"
 	"github.com/kika1s1/task_manager/repositories"
-	"github.com/kika1s1/task_manager/Usecases" // Update the import statement to match the correct case
+	"github.com/kika1s1/task_manager/usecases" // Update the import statement to match the correct case
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

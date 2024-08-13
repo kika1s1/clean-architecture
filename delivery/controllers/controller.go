@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/kika1s1/task_manager/Usecases"
+	"github.com/kika1s1/task_manager/usecases"
 )
 
 // Controller defines the interface for the task and user controllers.
